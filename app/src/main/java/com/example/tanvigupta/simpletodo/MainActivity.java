@@ -1,5 +1,6 @@
 package com.example.tanvigupta.simpletodo;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -18,6 +19,13 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
+
+    // Declare constants for this class
+    // code to identify edit activity
+    public final static int EDIT_REQUEST_CODE = 20;
+    // keys to transfer data between activities
+    public final static String ITEM_TEXT = "itemText";
+    public final static String ITEM_POSITION = "itemPosition";
 
     // Declare fields for this class
     ArrayList<String> items;
@@ -74,6 +82,7 @@ public class MainActivity extends AppCompatActivity {
     private void setupListViewListener(){
         Log.i("MainActivity", "Setting up listener on list view"); // called when app is created
 
+        // Set up item listener for long click (remove)
         lvItems.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
@@ -89,6 +98,49 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
         });
+
+        // Set up item listener for regular click (edit)
+        lvItems.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                // create the new activity
+                Intent in = new Intent(MainActivity.this, EditItemActivity.class);
+                // pass data being edited
+                in.putExtra(ITEM_TEXT, items.get(i));
+                in.putExtra(ITEM_POSITION, i);
+                // display the activity
+                startActivityForResult(in, EDIT_REQUEST_CODE);
+            }
+        });
+    }
+
+    // Handle results from edit activity
+
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        // if edit activity completed
+        if (resultCode == RESULT_OK && requestCode == EDIT_REQUEST_CODE) {
+            // extract update item text from result intent extras
+            String updatedItem = data.getExtras().getString(ITEM_TEXT);
+
+            // extract original position of updated item
+            int position = data.getExtras().getInt(ITEM_POSITION);
+
+            // update model with new item text at edited position
+            items.set(position, updatedItem);
+
+            // notify adapter of changes
+            itemsAdapter.notifyDataSetChanged();
+
+            // persist the changed model
+            writeItems();
+
+            // notify user of successful completion
+            Toast.makeText(this, "Item updated successfully", Toast.LENGTH_SHORT).show();
+        }
     }
 
     // Set up new file
